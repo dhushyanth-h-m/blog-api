@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    prots:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/blog-api
+      - REDIS_HOST=redis
+      - REDIS_PORT=6370
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+      - ./logs:/usr/src/app/logs
+    restart: unless-stopped
+    networks:
+      - blog-network
+    
+  mongo:
+    image: mongo:6.0 
+    ports:
+      - "27107:27107" 
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=blog-api
+    volumes:
+      - mongo-data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped
+    networks:
+      - blog-network
+    
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - blog-network
+  
+  ngnix:
+    image: ngnix:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ngnix.conf:/etc/ngnix/ngnix.conf:ro
+      - ./ssl:/etc/ngnix/ssl:ro 
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - blog-network
+    
+volumes:
+  mongo-data:
+  redis-data:
+
+networks:
+  blog-network:
+    driver: bridge
