@@ -18,7 +18,7 @@
     "seed": "node scripts/seed.js",
     "docker:build": "docker build -t blog-api .",
     "docker:run": "docker run -p 3000:3000 blog-api",
-    "docker:compose": "docker-compose up -d",
+    "docker:compose": "docker compose up -d",
     "docker:down": "docker-compose down",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop ecosystem.config.js",

@@ -1,15 +1,13 @@
-version: '3.8'
-
 services:
   app:
     build: .
-    prots:
+    ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongo:27017/blog-api
       - REDIS_HOST=redis
-      - REDIS_PORT=6370
+      - REDIS_PORT=6379
     depends_on:
       - mongo
       - redis
@@ -23,7 +21,7 @@ services:
   mongo:
     image: mongo:6.0 
     ports:
-      - "27107:27107" 
+      - "27017:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password
@@ -46,14 +44,14 @@ services:
     networks:
       - blog-network
   
-  ngnix:
-    image: ngnix:alpine
+  nginx:
+    image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./ngnix.conf:/etc/ngnix/ngnix.conf:ro
-      - ./ssl:/etc/ngnix/ssl:ro 
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro 
     depends_on:
       - app
     restart: unless-stopped

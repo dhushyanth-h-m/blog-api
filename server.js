@@ -25,8 +25,8 @@ process.on('SIGTERM', () => {
     });
 });
 
-process.on('SIGINIT', () => {
-    logger.info('SIGINIT received. Shitting down gracefully....');
+process.on('SIGINT', () => {
+    logger.info('SIGINT received. Shutting down gracefully....');
     server.close(() => {
         logger.info('Process terminated');
         process.exit(0);
