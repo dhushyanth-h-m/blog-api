@@ -4,6 +4,7 @@ const cors = require('cors');
 const compression = require('compression');
 const morgan = require('morgan');
 const mongoSanitize = require('express-mongo-sanitize');
+const AppError = require('./utils/AppError');
 require('dotenv').config();
 
 // Internal imports
@@ -19,8 +20,9 @@ const userRoutes = require('./routes/users');
 // Express app
 const app = express();
 
-// Trust proxy (for rate limiting behind reverse proxy)
-app.set('trust proxy', 1);
+// Body parsing middleware 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb'}));
 
 // Security middleware
 app.use(helmet({
@@ -34,6 +36,9 @@ app.use(helmet({
     },
     crossOriginEmbedderPolicy: false,
 }));
+
+// Trust proxy (for rate limiting behind reverse proxy)
+app.set('trust proxy', 1);
 
 // CORS configuration
 const corsOptions = {
@@ -59,12 +64,8 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb'}));
-
 // Data sanitization against NoSQL query injection
-// app.use(mongoSanitize());
+app.use(mongoSanitize());
 
 // Rate limiting
 app.use('/api/', rateLimiter);
@@ -127,15 +128,12 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// // Handle undefined routes
-// app.all('*', (req, res) => {
-//     res.status(404).json({
-//         status: 'error',
-//         message: `Route ${req.originalUrl} not found`,
-//     });
+// Handle undefined routes
+// app.all('*', (req, res, next) => {
+//     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 // });
 
-// Global error handler
-// app.use(errorHandler);
+// Global error handler - must be last
+app.use(errorHandler);
 
 module.exports = app;
