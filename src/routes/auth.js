@@ -1,5 +1,5 @@
 const express = require('express');
-const User = require('../models/User');
+const AuthService = require('../services/authService');
 const validate = require('../middleware/validation');
 const { registerSchema, loginSchema } = require('../validators/authValidator');
 const router = express.Router();
@@ -8,27 +8,32 @@ const router = express.Router();
 router.post('/register', validate(registerSchema), async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        const user = await User.create({
+        
+        const user = await AuthService.register({
             name, 
             email,
             password
         });
+        
         const token = user.getSignedJwtToken();
         res.status(201).json({
             success: true,
             token
         });
     } catch (error) {
-        // Check for duplicate email error
-        if (error.code === 11000) {
-            return res.status(400).json({
+        // Handle known application errors
+        if (error.isOperational) {
+            return res.status(error.statusCode).json({
                 success: false,
-                message: 'Email already exists'
+                message: error.message
             });
         }
-        res.status(400).json({
+        
+        // Handle unexpected errors
+        console.error('Registration error:', error);
+        res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Server error'
         });
     }
 });
@@ -38,32 +43,26 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Find user and explicitly select password
-        const user = await User.findOne({ email }).select('+password');
+        // Use AuthService instead of direct User model operations
+        const { user, token } = await AuthService.authenticate({
+            email,
+            password
+        });
 
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
-        }
-
-        // Check password match
-        const isMatch = await user.matchPassword(password);
-
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
-        }
-
-        const token = user.getSignedJwtToken();
         res.json({
             success: true,
             token
         });
     } catch (error) {
+        // Handle known application errors  
+        if (error.isOperational) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message
+            });
+        }
+        
+        // Handle unexpected errors
         console.error('Login error:', error);
         res.status(500).json({
             success: false,

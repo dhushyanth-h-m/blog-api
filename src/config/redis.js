@@ -8,9 +8,18 @@ const connectRedis = async () => {
         if (process.env.REDIS_HOST) {
             redisClient = new Redis({
                 host: process.env.REDIS_HOST || 'localhost',
-                port: process.env.REDIS_PORT || 6379
+                port: process.env.REDIS_PORT || 6379,
+                password: process.env.REDIS_PASSWORD || undefined,
+                db: process.env.REDIS_DB || 0
             });
-            logger.info('Redis Connected');
+            
+            redisClient.on('connect', () => {
+                logger.info('Redis Connected');
+            });
+            
+            redisClient.on('error', (err) => {
+                logger.error('Redis error:', err);
+            });
         } else {
             logger.warn('Redis connection skipped - REDIS_HOST not set');
         }
@@ -20,4 +29,16 @@ const connectRedis = async () => {
     }
 };
 
-module.exports = { connectRedis, redisClient };
+const disconnectRedis = async () => {
+    try {
+        if (redisClient) {
+            await redisClient.quit();
+            redisClient = null;
+            logger.info('Redis disconnected');
+        }
+    } catch (error) {
+        logger.error('Redis disconnect error:', error);
+    }
+};
+
+module.exports = { connectRedis, disconnectRedis, redisClient };
