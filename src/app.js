@@ -64,7 +64,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb'}));
 
 // Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 
 // Rate limiting
 app.use('/api/', rateLimiter);
@@ -82,8 +82,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/blogs', blogRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/blogs', blogRoutes);
 app.use('/api/users', userRoutes);
 
 // Welcome route
@@ -127,15 +127,15 @@ app.get('/api/docs', (req, res) => {
     });
 });
 
-// Handle undefined routes
-app.all('*', (req, res) => {
-    res.status(404).json({
-        status: 'error',
-        message: `Route ${req.originalUrl} not found`,
-    });
-});
+// // Handle undefined routes
+// app.all('*', (req, res) => {
+//     res.status(404).json({
+//         status: 'error',
+//         message: `Route ${req.originalUrl} not found`,
+//     });
+// });
 
 // Global error handler
-app.use(errorHandler);
+// app.use(errorHandler);
 
 module.exports = app;
