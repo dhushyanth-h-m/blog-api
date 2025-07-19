@@ -17,7 +17,7 @@ class AuthService {
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            throw new AppError('User already exists with this email', 400);
+            throw new AppError('User already exists with this email', 409);
         }
         
         // Create new user (password will be automatically hashed by the User model)
