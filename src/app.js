@@ -82,7 +82,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API routes
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 // app.use('/api/blogs', blogRoutes);
 app.use('/api/users', userRoutes);
 
