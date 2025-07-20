@@ -19,10 +19,7 @@ const register = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
     const {email, password} = req.body;
-    const user = await AuthService.authenticate({ email, password });
-    const token = user.getSignedJwtToken();
-
-    user.password = undefined;
+    const { user, token } = await AuthService.authenticate({ email, password });
 
     res.status(200).json({
         success: true,
