@@ -40,12 +40,29 @@ const startServer = async () => {
         await connectDB();
         await connectRedis();
 
+        // Warm cache after database connections are established
+        try {
+            logger.info('Starting cache warming process...');
+            const cacheService = require('./src/services/cacheService');
+            const warmResult = await cacheService.warmCache();
+            
+            if (warmResult.success) {
+                logger.info(`Cache warming completed: ${warmResult.warmedCount} entries cached`);
+            } else {
+                logger.warn('Cache warming failed, continuing without warm cache:', warmResult.error);
+            }
+        } catch (cacheError) {
+            // Don't fail server startup if cache warming fails
+            logger.warn('Cache warming error, continuing without warm cache:', cacheError.message);
+        }
+
         // Start HTTP server
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
             logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
             logger.info(`API Documentation: http://localhost:${PORT}/api/docs`);
             logger.info(`Health Check: http://localhost:${PORT}/api/health`);
+            logger.info(`Cache Management: http://localhost:${PORT}/api/blogs/cache/stats`);
         });
 
         // Server timeout

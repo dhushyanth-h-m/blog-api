@@ -1,45 +1,59 @@
-# Multi-stage build for optimized production image
-FROM node:18-alpine AS builder
+# Mutli-stage build for optimized production image
+FROM node:18-alpine AS base
 
-# Create app directory 
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache bumb-init
+
+# Create app directory
 WORKDIR /usr/src/app
 
-# Copy package files
+# create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -U 1001
+
+# copy package files 
 COPY package*.json ./
 
-# Install dependencies
+# Development stage
+FROM base as development 
+ENV NODE_ENV=development
+RUN npm ci --include=dev
+COPY . .
+RUN chown -R nodejs:nodejs /usr/src/app
+USER nodejs
+EXPOSE 3000
+CMD ["dumb-init", "npm", "run", "dev"]  
+
+# production dependencies stage
+FROM base as deps
+ENV NODE_ENV=production
 RUN npm ci --only=production && npm cache clean --force
 
-# Production stage
-FROM node:18-alpine AS production
+# production stage
+FROM base AS production 
+ENV NODE_ENV=production
 
-# create app directory 
-WORKDIR /usr/src/app 
+# copy dependencies from deps stage
+COPY --from=deps /usr/src/app/node_modules ./node_modules
 
-# create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy package files
-COPY package*.json ./
-
-# Copy dependencies from builder stage
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-
-# Copy source code
+# copy source code
 COPY --chown=nodejs:nodejs . .
 
-# create necessary directories
-RUN mkdir -p logs uploads && chown -R nodejs:nodejs logs uploads
+# create necessay directories with proper permissions
+RUN mkdir -p logs uploads tmp && chown -R nodejs:nodejs logs uploads tmp
 
-# Switch to non-root user
+# switch to non-root user
 USER nodejs
 
-# Expose port
+# expose port 
 EXPOSE 3000
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD node healthcheck.js
+# health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD node healthcheck.js || exit 1
 
-# Start the application
+# use dumb-init for proper signal handling
+ENTRYPOINT [ "dump-init", "--" ]
 CMD ["node", "server.js"]
+
+# staging stage 
+FROM production AS staging
+ENV NODE_ENV=staging

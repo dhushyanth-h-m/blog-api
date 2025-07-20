@@ -91,4 +91,47 @@ router.delete('/:id', protect, async (req, res, next) => {
     }
 });
 
+// Cache warming endpoint (admin only)
+router.post('/cache/warm', async (req, res) => {
+    try {
+        const cacheService = require('../services/cacheService');
+        const result = await cacheService.warmCache();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Cache warming completed',
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Cache warming failed',
+            error: error.message
+        });
+    }
+});
+
+// Cache stats endpoint
+router.get('/cache/stats', async (req, res) => {
+    try {
+        const cacheService = require('../services/cacheService');
+        const stats = await cacheService.getStats();
+        const health = await cacheService.healthCheck();
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                health,
+                stats
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get cache stats',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

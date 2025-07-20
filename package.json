@@ -23,6 +23,8 @@
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop ecosystem.config.js",
     "pm2:restart": "pm2 restart ecosystem.config.js",
+    "cache:warm": "node scripts/warm-cache.js",
+    "cache:clear": "node -e \"const redis = require('./src/config/redis'); redis.connectRedis().then(() => redis.redisClient.flushdb()).then(() => console.log('Cache cleared')).catch(err => console.error('Error:', err)).finally(() => process.exit())\"",
     "prepare": "husky install"
   },
   "keywords": [],
